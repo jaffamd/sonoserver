@@ -36,6 +36,6 @@ sudo npm start
 sudo pm2 save
 
 echo "Server configuration complete. Congratulations!"
-echo "Please set the \"server address\" on your sonostreamer to ${dig +short myip.opendns.com @resolver1.opendns.com}"
+echo "Please set the \"server address\" on your sonostreamer to $(dig +short myip.opendns.com @resolver1.opendns.com)"
 echo "Happy scanning and happy streaming!"
 echo "Type \"logout\" and hit \"Enter\" to logout"
