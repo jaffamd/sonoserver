@@ -1,0 +1,41 @@
+#!/bin/sh
+# This script configures a Ubuntu server for use with the Sonostreamer platform
+# Version 2.0.0
+# Licence: GPLv3
+# Author: Elias Jaffa (@jaffa_md)
+
+echo "Beginning server configuration........."
+
+# Add external repository to access the latest version of ffmpeg
+sudo add-apt-repository ppa:jonathonf/ffmpeg-4
+sudo apt-get update && sudo apt-get upgrade -y && sudo apt upgrade -y
+
+# Configure and enable firewall
+sudo ufw allow ssh
+sudo ufw allow http
+sudo ufw allow https
+sudo ufw allow 1935
+sudo ufw enable
+
+# Install latest versions of NodeJS and ffmpeg (and git, for good measure)
+sudo curl -sL https://deb.nodesource.com/setup_14.x | sudo bash -
+sudo apt-get install nodejs ffmpeg -y
+
+# Install pm2 for app lifecycle management and configure to start on system boot
+sudo npm install -g pm2
+sudo pm2 startup
+
+# Get sonoserver app files from GitHub and install node packages
+cd /
+git clone https://github.com/jaffamd/sonoserver.git
+cd sonoserver
+npm install
+
+# start the app and save the pm2 state to ensure app will run on system reboot
+sudo npm start
+sudo pm2 save
+
+echo "Server configuration complete. Congratulations!"
+echo "Please set the \"server address\" on your sonostreamer to ${dig +short myip.opendns.com @resolver1.opendns.com}"
+echo "Happy scanning and happy streaming!"
+echo "Type \"logout\" and hit \"Enter\" to logout"

@@ -1,0 +1,16 @@
+{
+  "name": "sonoserver",
+  "version": "2.0.0",
+  "description": "A simple, user-friendly software platform to facilitate livestreaming ultrasound images for realtime feedback and guidance. Based on NodeJS to allow for broad adoption across multiple server hardware/software platforms.",
+  "main": "app.js",
+  "dependencies": {
+    "express": "^4.17.1",
+    "node-media-server": "^2.1.9"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "pm2 start app.js --name sonoserver --log sonoserver.log --watch --ignore-watch=\"node_modules\" --ignore-watch=\"sonoserver.log\""
+  },
+  "author": "Elias Jaffa, MD, MS (@jaffa_md)",
+  "license": "GPL-3.0-or-later"
+}
