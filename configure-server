@@ -1,6 +1,6 @@
 #!/bin/sh
 # This script configures a Ubuntu server for use with the Sonostreamer platform
-# Version 2.0.0
+# Version 2.1.0
 # Licence: GPLv3
 # Author: Elias Jaffa (@jaffa_md)
 
@@ -15,25 +15,111 @@ sudo ufw allow ssh
 sudo ufw allow http
 sudo ufw allow https
 sudo ufw allow 1935
-sudo ufw enable
+sudo ufw enable -y
 
-# Install latest versions of NodeJS and ffmpeg (and git, for good measure)
+# Install latest versions of ffmpeg and nginx, along with the nginx module to allow RTMP ingest
 sudo curl -sL https://deb.nodesource.com/setup_14.x | sudo bash -
-sudo apt-get install nodejs ffmpeg -y
+sudo apt-get install ffmpeg nginx -y
+sudo apt install libnginx-mod-rtmp -y
 
-# Install pm2 for app lifecycle management and configure to start on system boot
-sudo npm install -g pm2
-sudo pm2 startup
+# Overwrite the nginx server configuraton file
+sudo bash -c 'cat > /etc/nginx/nginx.conf' << EOF
+user www-data;
+worker_processes auto;
+pid /run/nginx.pid;
+include /etc/nginx/modules-enabled/*.conf;
 
-# Get sonoserver app files from GitHub and install node packages
-cd /
-git clone https://github.com/jaffamd/sonoserver.git
-cd sonoserver
-npm install
+events {
 
-# start the app and save the pm2 state to ensure app will run on system reboot
-sudo npm start
-sudo pm2 save
+  worker_connections  1024;
+
+}
+
+http {
+
+  sendfile on;
+  tcp_nopush on;
+  tcp_nodelay on;
+  keepalive_timeout 65;
+  types_hash_max_size 2048;
+
+  include /etc/nginx/mime.types;
+  default_type  application/octet-stream;
+
+  ##
+  # SSL Settings
+  ##
+
+  ssl_protocols TLSv1 TLSv1.1 TLSv1.2; # Dropping SSLv3, ref: POODLE
+  ssl_prefer_server_ciphers on;
+
+  ##
+  # Logging Settings
+  ##
+
+  access_log /var/log/nginx/access.log;
+  error_log /var/log/nginx/error.log;
+
+  ##
+  # Gzip Settings
+  ##
+
+  gzip on;
+
+  ##
+  # Virtual Host Configs
+  ##
+
+  include /etc/nginx/conf.d/*.conf;
+  include /etc/nginx/sites-enabled/*;
+
+  server {
+
+    listen 80;
+
+    #allows us to host webpages     
+    location / {
+
+      root   html;
+      index  index.html index.htm;
+
+    }
+  }
+}
+
+rtmp {
+
+  server {
+
+    listen 1935;
+    allow play all;
+
+    # Live video application - allows live viewing via rtmp://my-ip/live/livestream
+    # Recording is saved as (example) /rec/livestream-01-Nov-18-14:05:30.flv if started on Nov 18th at 2:05:30 pm
+
+    application live {
+
+      allow play all;
+      live on;
+      record all;
+      record_path /rec;
+      record_suffix -%d-%b-%y-%T.flv;
+    }
+
+    #allows you to play your recordings of your live streams using a URL like "rtmp://my-ip:1935/vod/filename.flv"
+    application vod {
+
+      play /rec;
+
+    }
+  }
+}
+EOF
+
+sudo mkdir /rec
+sudo chown www-data:www-data /rec
+
+sudo systemctl restart nginx
 
 echo "Server configuration complete. Congratulations!"
 echo "Please set the \"server address\" on your sonostreamer to $(dig +short myip.opendns.com @resolver1.opendns.com)"
