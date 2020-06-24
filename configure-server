@@ -6,8 +6,9 @@
 
 echo "Beginning server configuration........."
 
-# Add external repository to access the latest version of ffmpeg
+# Add external repositories to access the latest version of ffmpeg and the RTMP module for Nginx
 sudo add-apt-repository ppa:jonathonf/ffmpeg-4
+sudo add-apt-repository universe
 sudo apt-get update && sudo apt-get upgrade -y && sudo apt upgrade -y
 
 # Configure and enable firewall
